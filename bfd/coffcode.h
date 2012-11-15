@@ -2892,7 +2892,9 @@ coff_set_flags (bfd * abfd,
 
 #ifdef ARMMAGIC
     case bfd_arch_arm:
-#ifdef ARM_WINCE
+#ifdef ARMV7_WIN
+      * magicp = ARMV7PEMAGIC;
+#elif defined(ARM_WINCE)
       * magicp = ARMPEMAGIC;
 #else
       * magicp = ARMMAGIC;
