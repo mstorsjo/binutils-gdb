@@ -2125,6 +2125,7 @@ coff_set_arch_mach_hook (bfd *abfd, void * filehdr)
 #ifdef ARMMAGIC
     case ARMMAGIC:
     case ARMPEMAGIC:
+    case ARMV7PEMAGIC:
     case THUMBPEMAGIC:
       arch = bfd_arch_arm;
       machine = bfd_arm_get_mach_from_notes (abfd, ARM_NOTE_SECTION);
