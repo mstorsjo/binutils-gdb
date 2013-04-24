@@ -712,8 +712,13 @@ sec_to_styp_flags (const char *sec_name, flagword sec_flags)
     styp_flags |= IMAGE_SCN_MEM_READ;     /* Invert NOREAD for read.  */
   if ((sec_flags & SEC_READONLY) == 0)
     styp_flags |= IMAGE_SCN_MEM_WRITE;    /* Invert READONLY for write.  */
-  if (sec_flags & SEC_CODE)
+  if (sec_flags & SEC_CODE) {
     styp_flags |= IMAGE_SCN_MEM_EXECUTE;  /* CODE->EXECUTE.  */
+#ifdef ARMV7_WIN
+    styp_flags |= IMAGE_SCN_MEM_16BIT;
+    styp_flags &= ~IMAGE_SCN_MEM_WRITE;
+#endif
+  }
   if (sec_flags & SEC_COFF_SHARED)
     styp_flags |= IMAGE_SCN_MEM_SHARED;   /* Shared remains meaningful.  */
 
