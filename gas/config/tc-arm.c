@@ -20302,6 +20302,9 @@ relax_branch (fragS *fragp, asection *sec, int bits, long stretch)
   if (S_IS_DEFINED (fragp->fr_symbol)
       && ARM_IS_FUNC (fragp->fr_symbol))
       return 4;
+#else
+  if (! S_IS_LOCAL (fragp->fr_symbol))
+    return 4;
 #endif
 
   if (symbol_preemptible (fragp->fr_symbol))
