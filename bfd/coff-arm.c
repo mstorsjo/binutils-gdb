@@ -73,7 +73,7 @@
 #define NUM_ELEM(a) ((sizeof (a)) / sizeof ((a)[0]))
 #endif
 
-typedef enum {bunknown, b9, b12, b23} thumb_pcrel_branchtype;
+typedef enum {bunknown, b9, b12, b19, b23} thumb_pcrel_branchtype;
 /* Some typedefs for holding instructions.  */
 typedef unsigned long int insn32;
 typedef unsigned short int insn16;
@@ -174,6 +174,10 @@ coff_arm_reloc (bfd *abfd,
 #define ARM_THUMB12  4
 #define ARM_SECTION  14
 #define ARM_SECREL   15
+#define ARM_MOV32T   17
+#define ARM_BRANCH20T 18
+#define ARM_BRANCH24T 20
+#define ARM_BLX23T   21
 
 #else
 
@@ -204,9 +208,14 @@ static bfd_reloc_status_type coff_thumb_pcrel_12
 #ifndef ARM_WINCE
 static bfd_reloc_status_type coff_thumb_pcrel_9
   (bfd *, arelent *, asymbol *, void *, asection *, bfd *, char **);
-static bfd_reloc_status_type coff_thumb_pcrel_23
+#else
+static bfd_reloc_status_type coff_thumb_pcrel_19
+  (bfd *, arelent *, asymbol *, void *, asection *, bfd *, char **);
+static bfd_reloc_status_type coff_reloc_mov32t
   (bfd *, arelent *, asymbol *, void *, asection *, bfd *, char **);
 #endif
+static bfd_reloc_status_type coff_thumb_pcrel_23
+  (bfd *, arelent *, asymbol *, void *, asection *, bfd *, char **);
 
 static reloc_howto_type aoutarm_std_reloc_howto[] =
   {
@@ -310,6 +319,60 @@ static reloc_howto_type aoutarm_std_reloc_howto[] =
 	   TRUE, 	/* partial_inplace.  */
 	   0xffffffff,
 	   0xffffffff,
+	   PCRELOFFSET),
+    EMPTY_HOWTO (-1), /* ARM_MOV32A */
+    HOWTO (ARM_MOV32T,
+	   0,
+	   2,
+	   16,
+	   FALSE,
+	   0,
+	   complain_overflow_bitfield,
+	   coff_reloc_mov32t,
+	   "ARM_MOV32T",
+	   FALSE, 	/* partial_inplace.  */
+	   0x040f70ff,
+	   0x040f70ff,
+	   FALSE),
+    HOWTO (ARM_BRANCH20T,
+	   1,
+	   2,
+	   19,
+	   TRUE,
+	   0,
+	   complain_overflow_bitfield,
+	   coff_thumb_pcrel_19,
+	   "ARM_BRANCH20T",
+	   FALSE, 	/* partial_inplace.  */
+	   0x043f2fff,
+	   0x043f2fff,
+	   PCRELOFFSET),
+    EMPTY_HOWTO (-1), /* unallocated */
+    HOWTO (ARM_BRANCH24T,
+	   1,
+	   2,
+	   24,
+	   TRUE,
+	   0,
+	   complain_overflow_bitfield,
+	   coff_thumb_pcrel_23,
+	   "ARM_BRANCH24T",
+	   FALSE, 	/* partial_inplace.  */
+	   0x07ff2fff,
+	   0x07ff2fff,
+	   PCRELOFFSET),
+    HOWTO (ARM_BLX23T,
+	   2,
+	   2,
+	   24,
+	   TRUE,
+	   0,
+	   complain_overflow_bitfield,
+	   coff_thumb_pcrel_23, // TODO, use separate function
+	   "ARM_BLX23T",
+	   FALSE, 	/* partial_inplace.  */
+	   0x07ff2fff,
+	   0x07ff2fff,
 	   PCRELOFFSET),
 #else /* not ARM_WINCE */
     HOWTO (ARM_8,
@@ -676,6 +739,13 @@ coff_thumb_pcrel_common (bfd *abfd,
       signbit = 0x00000800;
       break;
 
+    case b19:
+      // TODO: Unfinished and untested
+      dstmsk  = 0x043f07ff;
+      offmsk  = 0x0007ffff;
+      signbit = 0x00040000;
+      break;
+
     case b23:
       dstmsk  = 0x07ff07ff;
       offmsk  = 0x007fffff;
@@ -702,6 +772,14 @@ coff_thumb_pcrel_common (bfd *abfd,
     case b9:
     case b12:
       relocation = ((target & dstmsk) << 1);
+      break;
+
+    case b19:
+      // TODO: Unfinished and untested
+      if (bfd_big_endian (abfd))
+	relocation = ((target & 0x7ff) << 1)  | ((target & 0x043f0000) >> 4);
+      else
+	relocation = ((target & 0x7ff) << 12) | ((target & 0x043f0000) >> 15);
       break;
 
     case b23:
@@ -744,6 +822,16 @@ coff_thumb_pcrel_common (bfd *abfd,
      target |= (relocation >> 1);
      break;
 
+   case b19:
+     // TODO: Unfinished and untested
+     if (bfd_big_endian (abfd))
+       target |= (((relocation & 0xfff) >> 1)
+		  | ((relocation << 4)  & 0x043f0000));
+     else
+       target |= (((relocation & 0xffe) << 15)
+		  | ((relocation >> 12) & 0x43f));
+     break;
+
    case b23:
      if (bfd_big_endian (abfd))
        target |= (((relocation & 0xfff) >> 1)
@@ -767,7 +855,34 @@ coff_thumb_pcrel_common (bfd *abfd,
   return flag;
 }
 
-#ifndef ARM_WINCE
+#ifdef ARM_WINCE
+static bfd_reloc_status_type
+coff_thumb_pcrel_19 (bfd *abfd,
+		     arelent *reloc_entry,
+		     asymbol *symbol,
+		     void * data,
+		     asection *input_section,
+		     bfd *output_bfd,
+		     char **error_message)
+{
+  return coff_thumb_pcrel_common (abfd, reloc_entry, symbol, data,
+                                  input_section, output_bfd, error_message,
+				  b19);
+}
+
+static bfd_reloc_status_type
+coff_reloc_mov32t (bfd *abfd ATTRIBUTE_UNUSED,
+		   arelent *reloc_entry ATTRIBUTE_UNUSED,
+		   asymbol *symbol ATTRIBUTE_UNUSED,
+		   void * data ATTRIBUTE_UNUSED,
+		   asection *input_section ATTRIBUTE_UNUSED,
+		   bfd *output_bfd ATTRIBUTE_UNUSED,
+		   char **error_message ATTRIBUTE_UNUSED)
+{
+  return bfd_reloc_ok;
+}
+#endif
+
 static bfd_reloc_status_type
 coff_thumb_pcrel_23 (bfd *abfd,
 		     arelent *reloc_entry,
@@ -782,6 +897,7 @@ coff_thumb_pcrel_23 (bfd *abfd,
 				  b23);
 }
 
+#ifndef ARM_WINCE
 static bfd_reloc_status_type
 coff_thumb_pcrel_9 (bfd *abfd,
 		    arelent *reloc_entry,
@@ -834,6 +950,11 @@ coff_arm_reloc_type_lookup (bfd * abfd, bfd_reloc_code_real_type code)
       ASTD (BFD_RELOC_ARM_PCREL_BRANCH,     ARM_26);
       ASTD (BFD_RELOC_THUMB_PCREL_BRANCH12, ARM_THUMB12);
       ASTD (BFD_RELOC_32_SECREL,            ARM_SECREL);
+      ASTD (BFD_RELOC_THUMB_PCREL_BRANCH23, ARM_BLX23T);
+      ASTD (BFD_RELOC_THUMB_PCREL_BLX,      ARM_BLX23T);
+      ASTD (BFD_RELOC_THUMB_PCREL_BRANCH25, ARM_BRANCH24T);
+      ASTD (BFD_RELOC_THUMB_PCREL_BRANCH20, ARM_BRANCH20T);
+      ASTD (BFD_RELOC_ARM_THUMB_MOVW,       ARM_MOV32T);
 #else
       ASTD (BFD_RELOC_8,                    ARM_8);
       ASTD (BFD_RELOC_16,                   ARM_16);
