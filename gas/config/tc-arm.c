@@ -21064,7 +21064,7 @@ md_pcrel_from_section (fixS * fixP, segT seg)
       && ((fixP->fx_addsy && S_GET_SEGMENT (fixP->fx_addsy) != seg)
 	  || (arm_force_relocation (fixP)
 #ifdef TE_WINCE
-	      && !S_IS_EXTERNAL (fixP->fx_addsy)
+//	      && !S_IS_EXTERNAL (fixP->fx_addsy)
 #endif
 	      )))
     base = 0;
@@ -21092,9 +21092,21 @@ md_pcrel_from_section (fixS * fixP, segT seg)
     case BFD_RELOC_THUMB_PCREL_BRANCH12:
     case BFD_RELOC_THUMB_PCREL_BRANCH20:
     case BFD_RELOC_THUMB_PCREL_BRANCH25:
+#ifdef TE_WINCE
+      if (fixP->fx_pcrel
+	  && fixP->fx_addsy != NULL
+	  && (S_GET_SEGMENT (fixP->fx_addsy) == seg)
+	  && (/*S_IS_EXTERNAL (fixP->fx_addsy) ||*/ !arm_force_relocation (fixP)))
+	return base + 4;
+      return base;
+#else
       return base + 4;
+#endif
 
     case BFD_RELOC_THUMB_PCREL_BRANCH23:
+#ifdef TE_WINCE
+      return base;
+#else
       if (fixP->fx_addsy
 	  && (S_GET_SEGMENT (fixP->fx_addsy) == seg)
 	  && !S_FORCE_RELOC (fixP->fx_addsy, TRUE)
@@ -21102,10 +21114,14 @@ md_pcrel_from_section (fixS * fixP, segT seg)
 	  && ARM_CPU_HAS_FEATURE (selected_cpu, arm_ext_v5t))
 	base = fixP->fx_where + fixP->fx_frag->fr_address;
        return base + 4;
+#endif
 
       /* BLX is like branches above, but forces the low two bits of PC to
 	 zero.  */
     case BFD_RELOC_THUMB_PCREL_BLX:
+#ifdef TE_WINCE
+      return base;
+#else
       if (fixP->fx_addsy
 	  && (S_GET_SEGMENT (fixP->fx_addsy) == seg)
 	  && !S_FORCE_RELOC (fixP->fx_addsy, TRUE)
@@ -21113,6 +21129,7 @@ md_pcrel_from_section (fixS * fixP, segT seg)
 	  && ARM_CPU_HAS_FEATURE (selected_cpu, arm_ext_v5t))
 	base = fixP->fx_where + fixP->fx_frag->fr_address;
       return (base + 4) & ~3;
+#endif
 
       /* ARM mode branches are offset by +8.  However, the Windows CE
 	 loader expects the relocation not to take this into account.  */
