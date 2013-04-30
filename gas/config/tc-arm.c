@@ -23319,7 +23319,10 @@ check_mapping_symbols (bfd *abfd ATTRIBUTE_UNUSED, asection *sec,
 void
 arm_adjust_symtab (void)
 {
-#ifdef OBJ_COFF
+/* Don't mark Thumb symbols differently when targeting win/armv7, where
+   everything is supposed to be Thumb and the ms tools don't recognize
+   the thumb symbol types. */
+#if defined(OBJ_COFF) && !defined(TE_WIN_ARMV7)
   symbolS * sym;
 
   for (sym = symbol_rootP; sym != NULL; sym = symbol_next (sym))
