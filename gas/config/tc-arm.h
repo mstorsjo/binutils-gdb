@@ -66,6 +66,8 @@ struct fix;
 # if defined TE_PE
 #  if defined TE_EPOC
 #   define TARGET_FORMAT (target_big_endian ? "epoc-pe-arm-big" : "epoc-pe-arm-little")
+#  elif defined TE_WIN_ARMV7
+#   define TARGET_FORMAT (target_big_endian ? "pe-arm-win-big" : "pe-arm-win-little")
 #  elif defined TE_WINCE
 #   define TARGET_FORMAT (target_big_endian ? "pe-arm-wince-big" : "pe-arm-wince-little")
 #  else
