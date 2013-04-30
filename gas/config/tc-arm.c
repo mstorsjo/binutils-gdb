@@ -2717,7 +2717,9 @@ find_real_start (symbolS * symbolP)
 
   if (new_target == NULL)
     {
+#ifndef TE_WIN_ARMV7
       as_warn (_("Failed to find real start of function: %s\n"), name);
+#endif
       new_target = symbolP;
     }
 
