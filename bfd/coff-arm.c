@@ -723,6 +723,11 @@ coff_thumb_pcrel_common (bfd *abfd,
   bfd_vma offmsk;
   bfd_vma signbit;
 
+#ifdef ARMV7_WIN
+  // HACK
+  return flag;
+#endif
+
   /* NOTE: This routine is currently used by GAS, but not by the link
      phase.  */
   switch (btype)
