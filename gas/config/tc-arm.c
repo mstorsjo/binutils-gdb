@@ -22973,6 +22973,10 @@ tc_gen_reloc (asection *section, fixS *fixp)
       reloc->addend = fixp->fx_offset = reloc->address;
     }
 #endif
+#ifdef TE_PE
+    if (code == BFD_RELOC_ARM_THUMB_MOVT)
+      return NULL;
+#endif
 
   reloc->howto = bfd_reloc_type_lookup (stdoutput, code);
 
