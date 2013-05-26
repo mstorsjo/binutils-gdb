@@ -148,7 +148,7 @@ coff_arm_reloc (bfd *abfd,
       }
 
   /* Now let bfd_perform_relocation finish everything up.  */
-  return bfd_reloc_continue;
+  return bfd_reloc_ok;
 }
 
 /* If USER_LABEL_PREFIX is defined as "_" (see coff_arm_is_local_label_name()
