@@ -21107,6 +21107,11 @@ md_pcrel_from_section (fixS * fixP, segT seg)
 
     case BFD_RELOC_THUMB_PCREL_BRANCH23:
 #ifdef TE_WINCE
+      if (fixP->fx_pcrel
+	  && fixP->fx_addsy != NULL
+	  && (S_GET_SEGMENT (fixP->fx_addsy) == seg)
+	  && (!S_IS_EXTERNAL (fixP->fx_addsy)))
+	return base + 4;
       return base;
 #else
       if (fixP->fx_addsy
