@@ -245,7 +245,7 @@ static reloc_howto_type aoutarm_std_reloc_howto[] =
 	   TRUE, 	/* partial_inplace.  */
 	   0xffffffff,
 	   0xffffffff,
-	   PCRELOFFSET),
+	   FALSE),
     HOWTO (ARM_RVA32,
 	   0,
 	   2,
