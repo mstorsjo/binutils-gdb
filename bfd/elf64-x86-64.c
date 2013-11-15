@@ -5142,6 +5142,9 @@ elf_x86_64_plt_sym_val (bfd_vma i, const asection *sec,
     {
       asection *plt = (asection *) sec;
       bfd_size_type ind, s;
+      static bfd *cached_bfd;
+      static bfd_vma cached_i;
+      static bfd_size_type cached_s;
 
       /* When elf_x86_64_arch_bed is used, we may have PLT entries of
 	 different sizes.  */
@@ -5167,12 +5170,37 @@ elf_x86_64_plt_sym_val (bfd_vma i, const asection *sec,
 	  plt->flags |= SEC_IN_MEMORY;
 	}
 
-      /* PLT0 always has the same size.  */
-      s = GET_PLT_ENTRY_SIZE (plt->owner);
-      for (ind = 1; ind <= i && s < plt->size; ind++)
+      /* Check if we have been called before.  */
+      if (cached_bfd != NULL)
+	{
+	  /* Check if cache is valid.  cached_i > i when cached_bfd is
+	     reused.  */
+	  if (cached_bfd != plt->owner || cached_i > i)
+	    cached_bfd = NULL;
+	  else
+	    {
+	      s = cached_s;
+	      ind = cached_i;
+	    }
+	}
+
+      /* Initialize the cache and start from the scratch when we are
+	 called the first time on this file.  */
+      if (cached_bfd == NULL)
+	{
+	  /* PLT0 always has the same size.  */
+	  s = GET_PLT_ENTRY_SIZE (plt->owner);
+	  ind = 1;
+	  cached_bfd = plt->owner;
+	}
+
+      for (; ind <= i && s < plt->size; ind++)
 	s += (((bfd_byte *) plt->contents)[s] == elf_x86_64_plt_entry[0]
 	      ? sizeof (elf_x86_64_plt_entry)
 	      : sizeof (elf_x86_64_mpx_plt_entry));
+
+      cached_s = s;
+      cached_i = ind;
 
       return plt->vma + s;
     }
