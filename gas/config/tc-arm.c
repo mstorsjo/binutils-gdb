@@ -22542,7 +22542,7 @@ md_apply_fix (fixS *	fixP,
       if (fixP->fx_done || !seg->use_rela_p)
 	{
 	  /* REL format relocations are limited to a 16-bit addend.  */
-	  if (!fixP->fx_done)
+	  if (!fixP->fx_done && 0)
 	    {
 	      if (value < -0x8000 || value > 0x7fff)
 		  as_bad_where (fixP->fx_file, fixP->fx_line,
